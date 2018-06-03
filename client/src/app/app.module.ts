@@ -1,4 +1,4 @@
-import {HttpClientModule} from '@angular/common/http';
+import {HttpClientModule, HTTP_INTERCEPTORS} from '@angular/common/http';
 import {NgModule} from '@angular/core';
 import {BrowserModule} from '@angular/platform-browser';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
@@ -23,6 +23,7 @@ import {AuthGuard} from './guards';
 import {AuthenticationClient, DeviceClient, PasswordClient} from './rest';
 import {AuthenticationService, DeviceService, DiagramService, SessionStorageService, UserService} from './services';
 import {ConfirmValidator, MaxValidator, MinValidator} from './validators';
+import { TokenInterceptor } from './interceptor';
 
 @NgModule({
   imports: [
@@ -58,7 +59,12 @@ import {ConfirmValidator, MaxValidator, MinValidator} from './validators';
     DeviceService,
     DiagramService,
     SessionStorageService,
-    UserService
+    UserService,
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: TokenInterceptor,
+      multi: true
+    }
   ],
   bootstrap: [AppComponent]
 })

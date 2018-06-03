@@ -17,7 +17,10 @@ export class AuthenticationService {
   login(username: string, password: string): Observable<void> {
     return this.restClient.authenticate({
       username: username, password: password
-    }).map(() => this.sessionStorageService.setLoggedIn(true));
+    }).map((res) => {
+      console.log(res);
+      this.sessionStorageService.setLoggedIn(res['token']);
+    });
   }
 
   logout(): void {

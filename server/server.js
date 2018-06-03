@@ -20,9 +20,13 @@
     let available;
     let devices = {};
 
-    app.use(bodyParser.urlencoded({ extended: true }));
+    app.use(bodyParser.urlencoded({
+        extended: true
+    }));
     app.use(bodyParser.json());
     app.use(cors());
+    // TODO Check validity of JWT tokens on requests
+    app.use((req, res, next) => checkToken(req, res, next));
 
     app.get("/devices/available", getAvailable);
     app.post("/authentication", authenticate);
@@ -56,18 +60,44 @@
             console.log(msg);
         });
         console.log('socket', req.testing);
-        ws.on('error',(error)=>{
-            console.log('client error',error);
+        ws.on('error', (error) => {
+            console.log('client error', error);
         })
 
     });
 
+    function checkToken(req, res, next) {
+        if (req.headers.authorization == 'Bearer false') {
+            if (req.body.username && req.body.password) {
+                next();
+            } else {
+                res.status(401).json({
+                    message: "No or Expired Token",
+                    error: {
+                        token: true
+                    }
+                });
+            }
+        } else {
+            if (req.body.username && req.body.password) {
+                next();
+            } else {
+                jwt.verify(req.headers.authorization.split("\ ")[1], 'secret', (err, decoded) => {
+                    if (err) {
+                        res.status(401).json({
+                            message: "No or Expired Token",
+                            error: {
+                                token: true
+                            }
+                        });
+                    } else {
+                        next();
+                    }
+                });
+            }
+        }
+    }
 
-
-
-
-
-    // TODO Check validity of JWT tokens on requests
     /**
      * Send the list of available devices to the client
      * @param req The request
@@ -75,7 +105,9 @@
      */
     function getAvailable(req, res) {
         if (!available) {
-            res.status(500).json({ message: "Devices not loaded" });
+            res.status(500).json({
+                message: "Devices not loaded"
+            });
         } else {
             res.status(200).json(available);
         }
@@ -97,7 +129,9 @@
      */
     function addDevice(req, res) {
         if (devices[req.body.index]) {
-            res.status(415).json({ message: "Device already exists" });
+            res.status(415).json({
+                message: "Device already exists"
+            });
         } else {
             devices[req.body.index] = {
                 index: req.body.index,
@@ -107,7 +141,9 @@
                 control: req.body.control,
                 successors: req.body.successors || []
             };
-            res.status(200).json({ message: "Device added" });
+            res.status(200).json({
+                message: "Device added"
+            });
         }
     }
 
@@ -118,11 +154,15 @@
      */
     function deleteDevice(req, res) {
         if (!devices[req.params.index]) {
-            res.status(404).json({ message: "Device does not exist" });
+            res.status(404).json({
+                message: "Device does not exist"
+            });
         } else {
             delete devices[req.params.index];
             Object.entries(devices).forEach(([key, device]) => deleteArrayEntry(device.successors, +req.params.index));
-            res.status(200).json({ message: "Device deleted" });
+            res.status(200).json({
+                message: "Device deleted"
+            });
         }
     }
 
@@ -133,10 +173,14 @@
      */
     function moveDevice(req, res) {
         if (!devices[req.params.index]) {
-            res.status(404).json({ message: "Device does not exist" });
+            res.status(404).json({
+                message: "Device does not exist"
+            });
         } else {
             devices[req.params.index].position = req.body.position;
-            res.status(200).json({ message: "Device position updated" });
+            res.status(200).json({
+                message: "Device position updated"
+            });
         }
     }
 
@@ -147,12 +191,18 @@
      */
     function addSuccessor(req, res) {
         if (!devices[req.params.index]) {
-            res.status(404).json({ message: "Start device does not exist" });
+            res.status(404).json({
+                message: "Start device does not exist"
+            });
         } else if (!devices[req.body.index]) {
-            res.status(400).json({ message: "End does not exist" });
+            res.status(400).json({
+                message: "End does not exist"
+            });
         } else {
             devices[req.params.index].successors.push(req.body.index);
-            res.status(200).json({ message: "Arrow added" });
+            res.status(200).json({
+                message: "Arrow added"
+            });
         }
     }
 
@@ -166,7 +216,9 @@
         if (device) {
             deleteArrayEntry(device.successors, +req.params.successor);
         }
-        res.status(200).json({ message: "Arrow deleted" });
+        res.status(200).json({
+            message: "Arrow deleted"
+        });
     }
 
     function deleteArrayEntry(array, entry) {
@@ -182,17 +234,36 @@
      * @param res The response
      */
     function authenticate(req, res) {
-        const username = req.body.username, password = req.body.password;
+        const token = req.body.token;
+        const username = req.body.username,
+            password = req.body.password;
 
         if (!user) {
-            res.status(500).json({ message: "User data not loaded" });
+            res.status(500).json({
+                message: "User data not loaded"
+            });
         } else if (!username || !password) {
-            res.status(400).json({ message: "Bad request" });
+            res.status(400).json({
+                message: "Bad request"
+            });
         } else if (username !== user.username || password !== user.password) {
-            res.status(401).json({ message: "Bad credentials", errors: { credentials: true } });
+            res.status(401).json({
+                message: "Bad credentials",
+                errors: {
+                    credentials: true
+                }
+            });
         } else {
             // TODO Send a JWT back to the client
-            res.status(200).json({ message: "Successfully logged in" });
+            let token = jwt.sign({
+                username: username,
+                exp: Math.floor(Date.now() / 1000) + (60 * 10)
+            }, 'secret');
+            res.status(200).json({
+                message: "Successfully logged in",
+                user: username,
+                'token': token
+            });
         }
     }
 
@@ -202,23 +273,37 @@
      * @param res The response
      */
     function changePassword(req, res) {
-        const oldPassword = req.body.oldPassword, newPassword = req.body.newPassword;
+        const oldPassword = req.body.oldPassword,
+            newPassword = req.body.newPassword;
 
         if (!user) {
-            res.status(500).json({ message: "User data not loaded" });
+            res.status(500).json({
+                message: "User data not loaded"
+            });
         } else if (!oldPassword || !newPassword) {
-            res.status(400).json({ message: "Bad request" });
+            res.status(400).json({
+                message: "Bad request"
+            });
         } else if (oldPassword !== user.password) {
-            res.status(400).json({ message: "Old password wrong", errors: { oldPassword: true } });
+            res.status(400).json({
+                message: "Old password wrong",
+                errors: {
+                    oldPassword: true
+                }
+            });
         } else {
             const data = `username: ${user.username}\npassword: ${newPassword}`;
             fs.writeFile("./resources/login.config", data, {}, function (err) {
                 if (err) {
                     console.log("Error writing user config: ", err);
-                    res.status(500).json({ message: "Password could not be stored" });
+                    res.status(500).json({
+                        message: "Password could not be stored"
+                    });
                 } else {
                     user.password = newPassword;
-                    res.status(200).json({ message: "Password successfully updated" });
+                    res.status(200).json({
+                        message: "Password successfully updated"
+                    });
                 }
             });
         }
@@ -235,8 +320,8 @@
         console.log(value);
         console.log('omegalul');
         console.log(devices[index]);
-        let array = [index,value]; 
-        let message = index + "," + value; 
+        let array = [index, value];
+        let message = index + "," + value;
         expressWs.getWss().clients.forEach(client => client.send(JSON.stringify(message)));
     }
 

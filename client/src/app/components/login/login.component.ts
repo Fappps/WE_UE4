@@ -25,6 +25,7 @@ export class LoginComponent {
         // noinspection JSIgnoredPromiseFromCall
         this.router.navigate(['/']);
       }, response => {
+        console.log(response);
         this.errorMessage = response.message;
         this.serverErrors = response.errors || null;
       });

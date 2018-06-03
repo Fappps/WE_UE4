@@ -2,20 +2,24 @@
 
 @Injectable()
 export class SessionStorageService {
-  private _loggedIn: boolean;
+  private _loggedIn;
 
   constructor() {
-    this._loggedIn = !!localStorage.getItem('loggedIn');
+    if(localStorage.getItem('loggedIn')){
+      this._loggedIn=localStorage.getItem('loggedIn');
+    }else{
+      this._loggedIn=false;
+    }
   }
 
-  get loggedIn(): boolean {
+  get loggedIn() {
     return this._loggedIn;
   }
 
-  setLoggedIn(loggedIn: boolean): void {
+  setLoggedIn(loggedIn): void {
     this._loggedIn = loggedIn;
     if (loggedIn) {
-      localStorage.setItem('loggedIn', 'true');
+      localStorage.setItem('loggedIn', loggedIn);
     } else {
       localStorage.removeItem('loggedIn');
     }

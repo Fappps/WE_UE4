@@ -47,12 +47,10 @@ export class DeviceService {
     this.socket
         .subscribe(
         (message) => {
-          console.log(message)
           //this.devices[message[0]].value = message[1];#+
           //var json = JSON.parse(message);
           var index = message.split(",");
           //devices[json.index].control = json.control;
-          console.log(index);
          // console.log(this.getDevices)
          // this.updateDevice(this.getDevice(0),index[1]);
          //console.log(this.getDevice(Number(index[0])));
