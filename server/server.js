@@ -4,7 +4,7 @@
 
 /* global require */
 
-(function() {
+(function () {
     "use strict";
 
     const express = require("express");
@@ -20,7 +20,7 @@
     let available;
     let devices = {};
 
-    app.use(bodyParser.urlencoded({extended: true}));
+    app.use(bodyParser.urlencoded({ extended: true }));
     app.use(bodyParser.json());
     app.use(cors());
 
@@ -36,8 +36,33 @@
     app.delete("/devices/:predecessor/successors/:successor", deleteSuccessor);
 
     // TODO Create a WebSocket that clients can connect to
-    // TODO Check validity of JWT tokens on requests
 
+    const expressWs = require('express-ws')(app);
+
+
+    app.use(function (req, res, next) {
+        console.log('middleware');
+        req.testing = 'testing';
+        return next();
+    });
+
+    app.get('/', function (req, res, next) {
+        console.log('get route', req.testing);
+        res.send('lul');
+        res.end();
+    });
+
+    app.ws('/', function (ws, req) {
+        ws.on('message', function (msg) {
+            console.log(msg);
+        });
+        console.log('socket', req.testing);
+    });
+
+
+
+
+    // TODO Check validity of JWT tokens on requests
     /**
      * Send the list of available devices to the client
      * @param req The request
@@ -45,7 +70,7 @@
      */
     function getAvailable(req, res) {
         if (!available) {
-            res.status(500).json({message: "Devices not loaded"});
+            res.status(500).json({ message: "Devices not loaded" });
         } else {
             res.status(200).json(available);
         }
@@ -67,7 +92,7 @@
      */
     function addDevice(req, res) {
         if (devices[req.body.index]) {
-            res.status(415).json({message: "Device already exists"});
+            res.status(415).json({ message: "Device already exists" });
         } else {
             devices[req.body.index] = {
                 index: req.body.index,
@@ -77,7 +102,7 @@
                 control: req.body.control,
                 successors: req.body.successors || []
             };
-            res.status(200).json({message: "Device added"});
+            res.status(200).json({ message: "Device added" });
         }
     }
 
@@ -88,11 +113,11 @@
      */
     function deleteDevice(req, res) {
         if (!devices[req.params.index]) {
-            res.status(404).json({message: "Device does not exist"});
+            res.status(404).json({ message: "Device does not exist" });
         } else {
             delete devices[req.params.index];
             Object.entries(devices).forEach(([key, device]) => deleteArrayEntry(device.successors, +req.params.index));
-            res.status(200).json({message: "Device deleted"});
+            res.status(200).json({ message: "Device deleted" });
         }
     }
 
@@ -103,10 +128,10 @@
      */
     function moveDevice(req, res) {
         if (!devices[req.params.index]) {
-            res.status(404).json({message: "Device does not exist"});
+            res.status(404).json({ message: "Device does not exist" });
         } else {
             devices[req.params.index].position = req.body.position;
-            res.status(200).json({message: "Device position updated"});
+            res.status(200).json({ message: "Device position updated" });
         }
     }
 
@@ -117,12 +142,12 @@
      */
     function addSuccessor(req, res) {
         if (!devices[req.params.index]) {
-            res.status(404).json({message: "Start device does not exist"});
+            res.status(404).json({ message: "Start device does not exist" });
         } else if (!devices[req.body.index]) {
-            res.status(400).json({message: "End does not exist"});
+            res.status(400).json({ message: "End does not exist" });
         } else {
             devices[req.params.index].successors.push(req.body.index);
-            res.status(200).json({message: "Arrow added"});
+            res.status(200).json({ message: "Arrow added" });
         }
     }
 
@@ -136,7 +161,7 @@
         if (device) {
             deleteArrayEntry(device.successors, +req.params.successor);
         }
-        res.status(200).json({message: "Arrow deleted"});
+        res.status(200).json({ message: "Arrow deleted" });
     }
 
     function deleteArrayEntry(array, entry) {
@@ -155,14 +180,14 @@
         const username = req.body.username, password = req.body.password;
 
         if (!user) {
-            res.status(500).json({message: "User data not loaded"});
+            res.status(500).json({ message: "User data not loaded" });
         } else if (!username || !password) {
-            res.status(400).json({message: "Bad request"});
+            res.status(400).json({ message: "Bad request" });
         } else if (username !== user.username || password !== user.password) {
-            res.status(401).json({message: "Bad credentials", errors: {credentials: true}});
+            res.status(401).json({ message: "Bad credentials", errors: { credentials: true } });
         } else {
             // TODO Send a JWT back to the client
-            res.status(200).json({message: "Successfully logged in"});
+            res.status(200).json({ message: "Successfully logged in" });
         }
     }
 
@@ -175,20 +200,20 @@
         const oldPassword = req.body.oldPassword, newPassword = req.body.newPassword;
 
         if (!user) {
-            res.status(500).json({message: "User data not loaded"});
+            res.status(500).json({ message: "User data not loaded" });
         } else if (!oldPassword || !newPassword) {
-            res.status(400).json({message: "Bad request"});
+            res.status(400).json({ message: "Bad request" });
         } else if (oldPassword !== user.password) {
-            res.status(400).json({message: "Old password wrong", errors: {oldPassword: true}});
+            res.status(400).json({ message: "Old password wrong", errors: { oldPassword: true } });
         } else {
             const data = `username: ${user.username}\npassword: ${newPassword}`;
-            fs.writeFile("./resources/login.config", data, {}, function(err) {
+            fs.writeFile("./resources/login.config", data, {}, function (err) {
                 if (err) {
                     console.log("Error writing user config: ", err);
-                    res.status(500).json({message: "Password could not be stored"});
+                    res.status(500).json({ message: "Password could not be stored" });
                 } else {
                     user.password = newPassword;
-                    res.status(200).json({message: "Password successfully updated"});
+                    res.status(200).json({ message: "Password successfully updated" });
                 }
             });
         }
@@ -201,13 +226,20 @@
      */
     function sendUpdatedValue(index, value) {
         // TODO Send the data to connected WebSocket clients
+        console.log(index);
+        console.log(value);
+        console.log('omegalul');
+        app.get('/', function (req, res, next) {
+            console.log('get route', req.testing);
+            res.send('lul');
+        });
     }
 
     /**
      * Read the user data from the login config file, parse it and store it in 'user'
      */
     function readUser() {
-        fs.readFile("./resources/login.config", "utf8", function(err, data) {
+        fs.readFile("./resources/login.config", "utf8", function (err, data) {
             if (err) {
                 console.log("Error reading user config: ", err);
             } else {
@@ -228,7 +260,7 @@
      * Read the available devices data from the json file and store it in 'available'
      */
     function readAvailable() {
-        fs.readFile("./resources/devices.json", "utf8", function(err, data) {
+        fs.readFile("./resources/devices.json", "utf8", function (err, data) {
             if (err) {
                 console.log("Error reading available devices: ", err);
             } else {
@@ -237,7 +269,7 @@
         });
     }
 
-    const server = app.listen(8081, function() {
+    const server = app.listen(8081, function () {
         readUser();
         readAvailable();
         simulation.simulateSmartProduction(devices, sendUpdatedValue);

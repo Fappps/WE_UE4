@@ -9,6 +9,7 @@ export abstract class BaseControlComponent<T> implements OnInit, OnDestroy {
   abstract device: Device<Control<T>>;
   value: T;
   log: string;
+  
 
   private subscription: Subscription;
 

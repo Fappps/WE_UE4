@@ -10,6 +10,7 @@ import {DeviceService} from '../../services';
 export class OverviewComponent {
   constructor(private readonly deviceService: DeviceService) {
   }
+  
 
   get deviceCount(): Observable<number> {
     return this.deviceService.getDeviceCount();
