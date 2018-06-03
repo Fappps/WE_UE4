@@ -40,20 +40,19 @@
     const expressWs = require('express-ws')(app);
 
 
-    app.use(function (req, res, next) {
-        console.log('middleware');
-        req.testing = 'testing';
-        return next();
-    });
-
     app.get('/', function (req, res, next) {
         console.log('get route', req.testing);
         res.send('lul');
-        res.end();
     });
 
     app.ws('/', function (ws, req) {
+        ws.on('connect', (msg) =>{
+            console.log('msg');
+        });
         ws.on('message', function (msg) {
+            console.log(devices);
+            let bekommen = JSON.parse(msg);
+            devices[bekommen.index].control=bekommen.control;
             console.log(msg);
         });
         console.log('socket', req.testing);

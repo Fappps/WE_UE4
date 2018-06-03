@@ -5,6 +5,7 @@ import {Observable} from 'rxjs/Observable';
 import {ReplaySubject} from 'rxjs/ReplaySubject';
 import {Subject} from 'rxjs/Subject';
 import 'rxjs/add/operator/map';
+import { WebSocketSubject } from 'rxjs/observable/dom/WebSocketSubject';
 
 import {AvailableDevice, Control, LogEntry} from '../models';
 import {DeviceClient} from '../rest';
@@ -17,6 +18,7 @@ export class DeviceService {
   private readonly devices: Subject<Device<any>[]>;
   private readonly arrows: Subject<Arrow[]>;
   private readonly logUpdates: Subject<LogUpdate<any>>;
+  private socket: WebSocketSubject<String>;
 
   constructor(private readonly deviceClient: DeviceClient) {
     this.devices = new ReplaySubject();
@@ -40,19 +42,16 @@ export class DeviceService {
     this.logUpdates = new Subject();
 
     // TODO Create a WebSocket and subscribe to incoming messages
-    
-    const ws = new WebSocket('ws://localhost:8081');
-    // event emmited when connected
-    ws.onopen = function () {
-        console.log('websocket is connected ...')
-        // sending a send event to websocket server
-        ws.send('connected')
-    }
-    // event emmited when receiving message 
-    ws.onmessage = function (ev) {
-       // console.log(ev);
-        console.log('lul');
-    }
+    this.socket = WebSocketSubject.create('ws://localhost:8081');
+
+    this.socket
+        .subscribe(
+        (message) => {
+          console.log(message)
+        },
+        (err) => console.error(err),
+        () => console.warn('Completed!')
+        );
 
     //this.deviceClient.getDevices().subscribe();
   }
@@ -115,6 +114,7 @@ export class DeviceService {
   updateDevice<T>(device: Device<Control<T>>, value: T): void {
     // TODO Send updated values to server via WebSocket
     this.setDeviceValue(device, value);
+    this.socket.next(JSON.stringify(device));
   }
 
   private setDeviceValue<T>(device: Device<Control<T>>, value: T): void {
