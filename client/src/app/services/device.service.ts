@@ -48,6 +48,15 @@ export class DeviceService {
         .subscribe(
         (message) => {
           console.log(message)
+          //this.devices[message[0]].value = message[1];#+
+          //var json = JSON.parse(message);
+          var index = message.split(",");
+          //devices[json.index].control = json.control;
+          console.log(index);
+         // console.log(this.getDevices)
+         // this.updateDevice(this.getDevice(0),index[1]);
+         //console.log(this.getDevice(Number(index[0])));
+          this.getDevice(Number(index[0])).subscribe(device => this.setDeviceValue(device, index[1]));
         },
         (err) => console.error(err),
         () => console.warn('Completed!')
@@ -138,7 +147,13 @@ export class DeviceService {
   getArrowCount(): Observable<number> {
     return this.arrows.map(arrows => arrows.length);
   }
+  /*
+  getProductCount(): Observable<number> {
+    //return this.devices.forEach(;
+    
+  }
 
+  */
   addArrow(arrow: Arrow): void {
     this.arrows.first().subscribe(arrows => {
       arrows.push(arrow);

@@ -46,17 +46,23 @@
     });
 
     app.ws('/', function (ws, req) {
-        ws.on('connect', (msg) =>{
+        ws.on('connect', (msg) => {
             console.log('msg');
         });
         ws.on('message', function (msg) {
             console.log(devices);
             let bekommen = JSON.parse(msg);
-            devices[bekommen.index].control=bekommen.control;
+            devices[bekommen.index].control = bekommen.control;
             console.log(msg);
         });
         console.log('socket', req.testing);
+        ws.on('error',(error)=>{
+            console.log('client error',error);
+        })
+
     });
+
+
 
 
 
@@ -228,10 +234,10 @@
         console.log(index);
         console.log(value);
         console.log('omegalul');
-        app.get('/', function (req, res, next) {
-            console.log('get route', req.testing);
-            res.send('lul');
-        });
+        console.log(devices[index]);
+        let array = [index,value]; 
+        let message = index + "," + value; 
+        expressWs.getWss().clients.forEach(client => client.send(JSON.stringify(message)));
     }
 
     /**

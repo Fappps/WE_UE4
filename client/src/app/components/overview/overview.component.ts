@@ -19,7 +19,11 @@ export class OverviewComponent {
   get arrowCount(): Observable<number> {
     return this.deviceService.getArrowCount();
   }
-
+  /*
+  get productCount(): Observable<number> {
+    //return this.deviceService.getProductCount();
+  }
+  */
   get available(): Observable<AvailableDevice[]> {
     return this.deviceService.getAvailable();
   }
